@@ -1,0 +1,33 @@
+<h5>Introduction</h5>
+<p>This Shiny app is a course project for the Cousera Data Science Specialization - Developing Data Products course. This app estimates the  average home price in Boston area in 1978, given its location, size and history. The prediction is based on a linear regression model using data from Harrison et al. [1].<br /></p>
+<p>&nbsp;</p>
+<h5>Data &amp; Model</h5>
+<p>The 1979 Boston housing data was obtained from UCI Machine Learning Repository [2]. For this work, we only focused on the following features to predict the median value of home price (MEDV):</p>
+<ul>
+  <li>TOWN: the town the house was located.</li>
+  <li>CHAS: wheter the house was near the Charles River.</li>
+  <li>RM: the number of rooms per home.</li>
+  <li>AGE: proportion of houses built prior to 1940.</li>
+</ul>
+<p>Additionally county name and geocode information was added based on public available sources [3, 4]. </p>
+<p>The MEDV was fit with TOWN, CHAS, RM and AGE with a linear regression model using R programming language [5]. The reason we choose a linear model is mainly for performance consideration, because the model is trained when a user launches the app.</p>
+<p>&nbsp;</p>
+<h5>User Interface</h5>
+<p>The app adopted the default layout of Shiny app pacakge with the interface divided into a left sidebar panel and a main panel. The sidebar contains options to allow user to choose the location (first narrowed by county and then by town), the rooms and the age of the house. If  a user does not make a choice, a set of default values will be used instead.</p>
+<p>Once the parameters are specified, the app will compute the house price based on our linear model and present the data in the main panel. The data presentation include three sections: </p>
+<ul>
+  <li>A Google map showing the location of the house (approximated by the center of the town).</li>
+  <li>A brief description of the house.</li>
+  <li>The estimated price of the house in 1978.</li>
+</ul>
+<p>A user may choose to examine many locations and freely adjust other parameters, the model will re-compute the price estimate and refresh the main panel content reactively.</p>
+<p>&nbsp;</p>
+<h5>Reference</h5>
+<ol>
+  <li>Harrison, D. and Rubinfeld, D.L. &quot;
+    Hedonic prices and the demand for clean air&quot;, J. Environ. Economics &amp; Management, vol.5, 81-102, 1978</li>
+  <li>https://archive.ics.uci.edu/ml/datasets/Housing (Accessed 7/26/2014)</li>
+  <li>http://en.wikipedia.org/wiki/List_of_municipalities_in_Massachusetts (Accessed 7/26/2014)</li>
+  <li>For Google geocoding service, see: https://developers.google.com/maps/documentation/geocoding/</li>
+  <li>R Core Team (2014)</li>
+</ol>
