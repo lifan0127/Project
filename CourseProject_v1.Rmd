@@ -1,0 +1,167 @@
+---
+title: "Motor Data Analysis - Transmission and Fuel Efficiency"
+output: word_document
+---
+
+
+#### Executive Summary
+
+In this study, we analyzed 32 automobiles in 10 dimensions in an attempt to correlate the fuel efficiency with the type of transmission system adopted by the vehicle. Our results showed that cars with manual transmission in general have better fuel efficiency than their automatic counter part. Particularly cars with 4 cylinders benefit the most from adopting manual transmission system. This result can be used to help consumers in their purchase decision and auto makers in their market segmentation efforts.
+
+```{r global_options, echo=FALSE, message = FALSE}
+library(knitr)
+library(ggplot2)
+library(gridExtra)
+library(GGally)
+library(dplyr)
+
+data(mtcars)
+
+opts_knit$set(message = FALSE, echo=FALSE, fig.width = 6, fig.height = 2)
+
+options(stringsAsFactors=FALSE)
+
+```
+
+#### Introduction
+
+Fuel efficiency (MPG) is one of the most important factors influencing automobile purchase. It has long been postulated that car models with manual transmission have better fuel efficiency than their automatic counterparts. However, there exist many contradictory data and personal testimonies and a general concensus has not been reached. Herein, we attempt to make a quantitative determination for our readers through an analysis of the Motor Trend database. More specifically, we are tasked to answer the following questions:
+
+* Is an automatic or manual transmission better for MPG?
+* Quantify the MPG difference between automatic and manual transmissions?
+
+```{r data_transformation, echo=FALSE}
+# Load mtcars data into a tbl_df object
+car.tbl <- tbl_df(mtcars)
+
+car.tbl$Transmission <- as.factor(ifelse(car.tbl$am==1, "Manual", "Automatic"))
+
+# the displacement is roughly uniform distribution.
+car.auto <- filter(car.tbl, Transmission=="Automatic")
+car.manual <- filter(car.tbl, Transmission=="Manual")
+
+```
+
+
+#### Data Source
+
+The dataset we used contains design and performance data related to 32 automobiles (1973-74 models). There are 10 variables that can be roughly divided into three categories:
+
+* Design & Spec: rear axle ratio, weight and acceleration (1/4 mile time).
+* Engine: cylinders, displacement, horsepower, carburetors and V/S engine.
+* Transmission: type (auto/manual) and gears. 
+
+The correlations between each pair of variables are summarized in a pairwise plot (Figure 1).
+
+
+#### Analysis & Discussion
+
+First, we divided the data into automatic and manual groups and compared the distribution of MPG. Based on the boxplot and density plot, we can clearly see that cars with manual transmission have higher MPG than ones with automatic transmission (Figure 2). In addition, a two-sample t test (one-side) was also conducted and had a p-value of 0.0001425 << 0.05, so we may conclude that generally specaking, cars with manual transmission in our dataset are more fuel efficent.
+
+However, we need to keep in mind that all of the cars in our database are different. Ideally, we need to hold other variables constant in this comparison by namely the exact same cars with either manual or automatic transmission. However, this was not possible in this study. Therefore, alternatively we will need to use linear regression to probe the impacts of other variables. If they can perfectly explanation all the variations in the data, then the type of transmission may be irrevelant. Otherwise, we may conclude that the difference we observed can be truly attributed to the transmission system.
+
+*Linear regression with Design and Spec only* 
+
+In our first model, we only used the design and spec related variables to fit the MPG data. The result suggested that weight and acceleration are statistically significant. The weight has a negative coefficient of -4.4 meaning a higher weight reduces fuel efficiency which is perfectly reasonable. The acceleration on the other hand has a positive correlation with MPG - this could be due to other factors, for example, heavier cars typically have poor acceleration.
+
+*Linear regression with Engine only*
+
+In our second model, we fit the MPG data with engine related parameters. Surprisingly, only displacement had a statistically significant but minor impact on MPG. This could be caued by the high correlation between displacement, horse power and cylinder. If we consolidate them into cylinder only, the new model shows that cylinder has a noticeable negative impact (-2.98) on fuel efficiency.
+
+*Linear regression with Transmission only*
+
+In our third model, we fit the MPG with transmission related variables. As seen previously in Figure 2, the use of manual transmission as a clear benefit for MPG (coefficient=7.14)
+
+*Final combined model*
+
+Lastly, we choose to combine the signficant parameters from the previous regression trials to build the final model. Additionally, we include interaction terms based on the potential correlations observed in Figure 1. This final model contains acceleration, weight, cylinder, transmission and cylinder*transmission.
+
+This final model shows that weight, transmission and transmission*cylinder being the statistically significant parameters and the model has a reasonably good fit based on R-squared and the model fitness plot as shown in Figure 3. Indeed, we can see that the advantage of manual transmission on feul efficiency is highly correlated with the number of cylinders, with cars with 4 cylinders benefit the most (over 20%) from manual transmission systems (Figure 4).
+
+
+
+Figure 1. Pairwise comparison.
+```{r pairwise, echo=FALSE, fig.width=6.5, fig.height=6.5, message=FALSE}
+
+pairs(mtcars)
+
+```
+
+
+Figure 2. Boxplot and density plot showing the impact of transmission on fuel efficiency.
+```{r overview, echo=FALSE, fig.width=6.5, fig.height=4, message=FALSE}
+# F-test
+#var.test(car.manual$mpg, car.auto$mpg)  # Variance barely not significant
+
+# t-test
+#t.test(car.manual$mpg, car.auto$mpg, alternative="greater", var.equal=TRUE, paired=FALSE)
+
+
+# Pairwise
+#ggpairs(car.tbl, color="Transmission", alpha=0.4)  # Warning: very slow
+
+# Boxplot
+p.1a <- ggplot(car.tbl, aes(x=Transmission, y=mpg, fill=Transmission)) + 
+          geom_boxplot(alpha=0.5) + 
+          theme_bw() + 
+          theme(legend.justification=c(0,1), legend.position=c(0,1))
+
+# Density
+p.1b <- ggplot(car.tbl, aes(x=mpg, fill=Transmission)) +
+          geom_density(alpha=0.5) +
+          theme_bw() + 
+          theme(legend.justification=c(1,1), legend.position=c(1,1))
+
+grid.arrange(p.1a, p.1b, ncol=2)
+
+```
+
+
+Figure 3. Evaluation of linear regression model.
+```{r linear_regression, echo=FALSE, fig.with=6, fig.height=6, message=FALSE}
+lm.1 <- lm(mpg~drat+qsec+wt, data=car.tbl)
+#summary(lm.1)
+
+
+lm.2 <- lm(mpg~cyl+vs+carb, data=car.tbl)
+#summary(lm.2)
+
+cor(mtcars$cyl, mtcars$disp)
+
+lm.3 <- lm(mpg~Transmission+gear, data=car.tbl)
+#summary(lm.3)
+
+# ggplot(car.tbl, aes(predict(lm.3), mpg, color=Transmission, group=Transmission)) + 
+#   geom_point() + 
+#   stat_smooth(method="lm", se=FALSE) +
+#   theme_bw()
+# 
+# # Residue
+# ggplot(car.tbl, aes(predict(lm.3), mpg-predict(lm.3), color=Transmission, group=Transmission)) + 
+#   geom_point() + 
+#   stat_smooth(method="lm", se=FALSE) +
+#   theme_bw()
+
+lm.4 <- lm(mpg~wt+qsec+cyl+Transmission+Transmission*cyl, data=car.tbl)
+#summary(lm.4)
+
+par(mfrow=c(2,2))
+plot(lm.4)
+
+```
+
+
+Figure 4. Fuel efficiency influenced by transmission and cylinder.
+```{r by_others, echo=FALSE, message=FALSE, fig.with=6.5, fig.height=4}
+
+# Group by cylinder
+ggplot(car.tbl, aes(x=Transmission, y=mpg, fill=Transmission)) + 
+  geom_boxplot() + 
+  theme_bw() +
+  theme(legend.position="none") +
+  facet_wrap(~cyl, ncol=3) 
+
+
+
+
+```
